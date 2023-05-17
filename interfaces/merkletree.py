@@ -1,8 +1,37 @@
 from __future__ import annotations
-from .common import ImplementationError, TestCase, RaisesError, tressa
+from .common import (
+    ImplementationError,
+    TestCase,
+    RaisesError,
+    tressa,
+    eton,
+    get_notes,
+    clear_notes,
+    error,
+    get_errors,
+    clear_errors
+)
 from random import randint
 from typing import Any, Protocol, runtime_checkable
 import hashlib
+import traceback
+
+
+"""
+    This interface specifies the required behaviors of a Merkle tree
+    implementation. A Merkle tree implementation must have the following:
+    - a set_hash_function for setting the hash function
+    - a get_hash_function for getting the hash function
+    - a class implementing the MerkleTreeProtocol
+
+    A Merkle tree implementation should have the following:
+    - error messages that match those specified below any `with RaisesError` clauses
+    - multiple error types to distinguish between a usage error and a security error
+    - test suite for any additional features and potential security attacks
+
+    The check_module function will test all must-have requirements and
+    make note of any discrepancies it finds for the should-have criteria.
+"""
 
 
 @runtime_checkable
@@ -50,6 +79,10 @@ class MerkleTreeProtocol(Protocol):
 
 def check_module(module, implementation_map: dict) -> None:
     """Checks the whole module."""
+    # reset
+    clear_errors()
+    clear_notes()
+
     # basic checks
     tressa(type(module) is type(hashlib), 'module must be a module')
     tressa('set_hash_function' in dir(module), 'module missing set_hash_function')
@@ -80,7 +113,16 @@ def check_module(module, implementation_map: dict) -> None:
                 'implementation_map must be dict mapping implementation classes to protocols')
             check_implementation(key, value)
         except BaseException as e:
-            print(e, e.__traceback__)
+            if e.__traceback__:
+                error(False, f'{e}: {traceback.format_exc()}')
+            else:
+                error(False, f'{e}')
+
+    for err in get_errors():
+        print(f'error: {err}')
+
+    for nt in get_notes():
+        print(f'note: {nt}')
 
 
 def check_implementation(implementation, protocol) -> None:
@@ -129,8 +171,8 @@ def check_implementation_of_MerkleTreeProtocol(implementation):
     with TestCase('from_leaves with <2 leaves raises error'):
         with RaisesError('from_leaves with only one leaf should raise an error') as e:
             implementation.from_leaves([b'just one leaf'])
-        assert str(e.exception) == 'must have at least 2 leaves', \
-            'incorrect error message'
+        eton(str(e.exception) == 'must have at least 2 leaves',
+            f'{e.label}: incorrect error message')
 
     with TestCase('from_leaves joins any number of leaves'):
         roots = set()
@@ -160,25 +202,29 @@ def check_implementation_of_MerkleTreeProtocol(implementation):
     with TestCase('implementation.from_dict raises errors for invalid params'):
         with RaisesError('from_dict must raise error on non-dict input') as e:
             implementation.from_dict('not a dict')
-        assert str(e.exception) == 'data must be dict type', 'incorrect error message'
+        eton(str(e.exception) == 'data must be dict type',
+            f'{e.label}: incorrect error message')
 
         with RaisesError('from_dict must raise error on dict input with != 1 key') as e:
             implementation.from_dict({})
-        assert str(e.exception) == 'data must have one key', 'incorrect error message'
+        eton(str(e.exception) == 'data must have one key',
+            f'{e.label}: incorrect error message')
 
         with RaisesError('from_dict must raise error on dict input with != 1 key') as e:
             implementation.from_dict({**serialized, 'what': 'huh'})
-        assert str(e.exception) == 'data must have one key', 'incorrect error message'
+        eton(str(e.exception) == 'data must have one key',
+            f'{e.label}: incorrect error message')
 
         with RaisesError('from_dict must raise error on more than left and right branches') as e:
             implementation.from_dict({"3231": [1,2,3]})
-        assert str(e.exception) == 'data[root] must have left and right branch', \
-            'incorrect error message'
+        eton(str(e.exception) == 'data[root] must have left and right branch',
+            f'{e.label}: incorrect error message')
 
         key = list(serialized.keys())[0]
         with RaisesError('from_dict must raise error on root mismatch') as e:
             implementation.from_dict({"3232": serialized[key]})
-        assert str(e.exception) == 'root mismatch', 'incorrect error message'
+        eton(str(e.exception) == 'root mismatch',
+            f'{e.label}: incorrect error message')
 
     with TestCase('instance.prove produces list of bytes proof'):
         for i in range(2, 300):
@@ -199,12 +245,13 @@ def check_implementation_of_MerkleTreeProtocol(implementation):
 
         with RaisesError('instance.prove must raise error for non-bytes input') as e:
             instance.prove('not bytes')
-        assert str(e.exception) == 'leaf must be bytes', 'incorrect error message'
+        eton(str(e.exception) == 'leaf must be bytes',
+            f'{e.label}: incorrect error message')
 
         with RaisesError('instance.prove must raise error for leaf not in tree') as e:
             instance.prove(b'not in tree')
-        assert str(e.exception) == 'the given leaf was not found in the tree', \
-            'incorrect error message'
+        eton(str(e.exception) == 'the given leaf was not found in the tree',
+            f'{e.label}: incorrect error message')
 
     with TestCase('verify executes without error for valid proof'):
         for i in range(2, 300):
@@ -222,22 +269,24 @@ def check_implementation_of_MerkleTreeProtocol(implementation):
 
         with RaisesError('should error on non-bytes root') as e:
             implementation.verify('tree.root', leaf, proof)
-        assert str(e.exception) == 'root must be bytes', 'incorrect error message'
+        eton(str(e.exception) == 'root must be bytes',
+            f'{e.label}: incorrect error message')
 
         with RaisesError('should error on non-bytes leaf') as e:
             implementation.verify(tree.root, 'leaf', proof)
-        assert str(e.exception) == 'leaf must be bytes', 'incorrect error message'
+        eton(str(e.exception) == 'leaf must be bytes',
+            f'{e.label}: incorrect error message')
 
         with RaisesError('should error on non-list proof') as e:
             implementation.verify(tree.root, leaf, {'not': 'list'})
-        assert str(e.exception) == 'proof must be list of bytes', \
-            'incorrect error message'
+        eton(str(e.exception) == 'proof must be list of bytes',
+            f'{e.label}: incorrect error message')
 
         with RaisesError('should error on proof with list of non-bytes'):
             wrong_proof = ['not bytes']
             implementation.verify(tree.root, leaf, wrong_proof)
-        assert str(e.exception) == 'proof must be list of bytes', \
-            'incorrect error message'
+        eton(str(e.exception) == 'proof must be list of bytes',
+            f'{e.label}: incorrect error message')
 
     with TestCase('verify raises errors for invalid proofs'):
         leaves = [n.to_bytes(2, 'big') for n in range(13)]
@@ -247,34 +296,34 @@ def check_implementation_of_MerkleTreeProtocol(implementation):
 
         with RaisesError('should error when proof does not reference leaf') as e:
             implementation.verify(tree.root, leaf + b'1', proof)
-        assert str(e.exception) == 'proof does not reference leaf', \
-            'incorrect error message'
+        eton(str(e.exception) == 'proof does not reference leaf',
+            f'{e.label}: incorrect error message')
 
         with RaisesError('should error when proof does not reference leaf') as e:
             wrong_proof = proof[1:]
             implementation.verify(tree.root, leaf, wrong_proof)
-        assert str(e.exception) == 'proof does not reference leaf', \
-            'incorrect error message'
+        eton(str(e.exception) == 'proof does not reference leaf',
+            f'{e.label}: incorrect error message')
 
         with RaisesError('should error when proof missing final hash operation') as e:
             wrong_proof = proof[:-1]
             implementation.verify(tree.root, leaf, wrong_proof)
-        assert str(e.exception) == 'proof missing final_hash op', \
-            'incorrect error message'
+        eton(str(e.exception) == 'proof missing final_hash op',
+            f'{e.label}: incorrect error message')
 
         with RaisesError('should error when proof does not reference root') as e:
             wrong_proof = [*proof]
             wrong_proof[-1] = wrong_proof[-1] + b'1'
             implementation.verify(tree.root, leaf, wrong_proof)
-        assert str(e.exception) == 'proof does not reference root', \
-            'incorrect error message'
+        eton(str(e.exception) == 'proof does not reference root',
+            f'{e.label}: incorrect error message')
 
         with RaisesError('should error when proof final hash does not match') as e:
             wrong_proof = [*proof]
             wrong_proof[1] = wrong_proof[1] + b'\x99'
             implementation.verify(tree.root, leaf, wrong_proof)
-        assert str(e.exception) == 'final hash does not match', \
-            'incorrect error message'
+        eton(str(e.exception) == 'final hash does not match',
+            f'{e.label}: incorrect error message')
 
     with TestCase('e2e arbitrary branching'):
         leaves = [hashlib.sha256(n.to_bytes(2, 'big')).digest() for n in range(13)]
