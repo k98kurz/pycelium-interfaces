@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pycelium-interfaces"
+name = "pycelium-specifications"
 version = "0.0.1"
 authors = [
   { name="k98kurz", email="k98kurz@gmail.com" },
@@ -22,5 +22,5 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/k98kurz/pycelium-interfaces"
-"Bug Tracker" = "https://github.com/k98kurz/pycelium-interfaces/issues"
+"Homepage" = "https://github.com/k98kurz/pycelium-specifications"
+"Bug Tracker" = "https://github.com/k98kurz/pycelium-specifications/issues"
