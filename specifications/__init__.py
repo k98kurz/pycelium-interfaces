@@ -1,2 +1,2 @@
-from .common import ImplementationError
-from .merkletree import MerkleTreeProtocol, check_implementation
+from .common import ImplementationError, ImplementationNote
+from . import merkletree
