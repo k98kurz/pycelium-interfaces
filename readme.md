@@ -25,15 +25,15 @@ example:
 ```python
 from sepcifications.something import SomethingProtocol, check_module
 from someimplementation import SomethingClass
+import someimplementation
 
-check_module({
-    SomethingClass: SomethingProtocol
-})
+check_module(someimplementation, {SomethingClass: SomethingProtocol})
 ```
 
-The `check_module` function calls `check_implementation` for each (key, value)
-pair in the dict parameter, and this then runs a test suite on the
-implementation class. Any failures to meet the specification will be reported.
+The `check_module` function runs high-level tests on the module, then it
+calls `check_implementation` for each (key, value) pair in the dict parameter,
+and this then runs a test suite on the implementation class. Any failures to
+meet the specification will be reported.
 
 Note that some types of implementation failures will prevent the full test suite
 from running, e.g. failure to instantiate.
