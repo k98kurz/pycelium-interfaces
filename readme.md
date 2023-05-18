@@ -45,7 +45,10 @@ will be reported as an `ImplementationNote`. Not all should-have requirements
 can be automatically detected, e.g. lack of documentation or test coverage for
 additional features.
 
-The following subpackages are currently included:
+## Current Specifications
+
+The following specifications are currently included:
+
 - merkletree: a specification showing what a Merkle tree should do
 
 # ISC License
