@@ -70,9 +70,14 @@ class TestCase:
         if __exc_value is not None:
             if __exc_type is ImplementationNote:
                 note(__exc_value)
+                print('N', end='', sep='', flush=True)
                 return True
-            else:
-                error(False, f'{self.label}: {__exc_value}')
+
+            print('F', end='', sep='', flush=True)
+            error(False, f'{self.label}: {__exc_value}')
+            return True
+
+        print('.', end='', sep='', flush=True)
 
 
 class RaisesError:

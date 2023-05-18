@@ -118,6 +118,8 @@ def check_module(module, implementation_map: dict) -> None:
             else:
                 error(False, f'{e}')
 
+    print('')
+
     for err in get_errors():
         print(f'error: {err}')
 
