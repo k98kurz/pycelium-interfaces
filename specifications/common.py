@@ -58,6 +58,22 @@ def clear_notes() -> None:
     _notes.clear()
 
 
+def post_test_report() -> None:
+    """Report the test results."""
+    print('')
+
+    for err in get_errors():
+        print(f'error: {err}')
+
+    for nt in get_notes():
+        print(f'note: {nt}')
+
+    if len(get_errors()) > 0:
+        print(f'Specification test failed with {len(get_errors())} error(s) and {len(get_notes())} note(s).')
+    else:
+        print(f'Sepcification test passed with {len(get_notes())} note(s).')
+
+
 class TestCase:
     label: str
     def __init__(self, label: str) -> None:

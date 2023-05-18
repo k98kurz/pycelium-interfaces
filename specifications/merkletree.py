@@ -5,11 +5,10 @@ from .common import (
     RaisesError,
     tressa,
     eton,
-    get_notes,
     clear_notes,
     error,
-    get_errors,
-    clear_errors
+    clear_errors,
+    post_test_report
 )
 from random import randint
 from typing import Any, Protocol, runtime_checkable
@@ -118,13 +117,7 @@ def check_module(module, implementation_map: dict) -> None:
             else:
                 error(False, f'{e}')
 
-    print('')
-
-    for err in get_errors():
-        print(f'error: {err}')
-
-    for nt in get_notes():
-        print(f'note: {nt}')
+    post_test_report()
 
 
 def check_implementation(implementation, protocol) -> None:
