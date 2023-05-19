@@ -1,4 +1,6 @@
 from __future__ import annotations
+from typing import Protocol, Callable
+import traceback
 
 
 class ImplementationError(BaseException):
@@ -112,3 +114,42 @@ class RaisesError:
             error(False, f'{self.label}: no error raised')
         self.exception = __exc_value
         return True
+
+
+def basic_checks(module, expected_functions: list[str], implementation_map: dict[type, type]):
+    """Performs basic checks."""
+    tressa(type(module) is type(traceback), 'module must be a module')
+    for function_name in expected_functions:
+        tressa(function_name in dir(module), f'module missing {function_name} function')
+    tressa(type(implementation_map) is dict,
+        'implementation_map must be dict mapping implementation classes from the module to protocols')
+
+
+def check_classes(implementation_map, protocol_spec_map: dict[type, Callable],
+                  optional_specs: list[type] = []):
+    """Checks all implementations."""
+    actual_implementations = set()
+
+    for implementation, protocol in implementation_map.items():
+        try:
+            tressa(type(implementation) is type,
+                'implementation_map must be dict mapping implementation classes to protocols')
+            tressa(issubclass(protocol, Protocol),
+                'implementation_map must be dict mapping implementation classes to protocols')
+            check_implementation(implementation, protocol, protocol_spec_map)
+            actual_implementations.add(protocol)
+        except BaseException as e:
+            if e.__traceback__:
+                error(False, f'{e}: {traceback.format_exc()}')
+            else:
+                error(False, f'{e}')
+
+    for protocol in protocol_spec_map:
+        if protocol not in actual_implementations and protocol not in optional_specs:
+            error(False, f'missing implementation of {protocol.__name__}')
+
+
+def check_implementation(implementation, protocol, protocol_spec_map) -> None:
+    """Checks the implementation of the protocol."""
+    if protocol in protocol_spec_map:
+        protocol_spec_map[protocol](implementation)

@@ -6,14 +6,14 @@ from .common import (
     tressa,
     eton,
     clear_notes,
-    error,
     clear_errors,
-    post_test_report
+    basic_checks,
+    check_classes,
+    post_test_report,
 )
 from random import randint
 from typing import Any, Protocol, runtime_checkable
 import hashlib
-import traceback
 
 
 """
@@ -76,54 +76,43 @@ class MerkleTreeProtocol(Protocol):
         ...
 
 
-def check_module(module, implementation_map: dict) -> None:
-    """Checks the whole module."""
+def check_module(module, implementation_map: dict[type, type]) -> None:
+    """Checks the whole module. The implementation_map must be a dict
+        mapping implementations to protocols.
+    """
     # reset
     clear_errors()
     clear_notes()
 
     # basic checks
-    tressa(type(module) is type(hashlib), 'module must be a module')
-    tressa('set_hash_function' in dir(module), 'module missing set_hash_function')
-    tressa('get_hash_function' in dir(module), 'module missing get_hash_function')
-    tressa(type(implementation_map) is dict,
-        'implementation_map must be dict mapping implementation classes from the module to protocols')
+    basic_checks(module, ['get_hash_function', 'set_hash_function'], implementation_map)
 
-    # test get_hash_function and set_hash_function
+    check_functions(module)
+
+    check_classes(implementation_map, {MerkleTreeProtocol: check_implementation_of_MerkleTreeProtocol})
+
+    post_test_report()
+
+
+def check_functions(module) -> None:
+    """Tests the functions the module should have."""
+    # test get_hash_function
     try:
         original_hash_function = module.get_hash_function()
         tressa(callable(original_hash_function), 'get_hash_function returned non-callable')
     except BaseException as e:
         raise ImplementationError(f'get_hash_function failed: {e}')
 
+    # test set_hash_function
     try:
+        original_hash_function = module.get_hash_function()
         new_hash_function = lambda preimage: hashlib.sha256(preimage).digest()
         module.set_hash_function(new_hash_function)
         tressa(module.get_hash_function() == new_hash_function,
             'set_hash_function failed to set new hash function')
+        module.set_hash_function(original_hash_function)
     except BaseException as e:
         raise ImplementationError(f'set_hash_function failed: {e}')
-
-    for key, value in implementation_map.items():
-        try:
-            tressa(type(key) is type,
-                'implementation_map must be dict mapping implementation classes to protocols')
-            tressa(issubclass(value, Protocol),
-                'implementation_map must be dict mapping implementation classes to protocols')
-            check_implementation(key, value)
-        except BaseException as e:
-            if e.__traceback__:
-                error(False, f'{e}: {traceback.format_exc()}')
-            else:
-                error(False, f'{e}')
-
-    post_test_report()
-
-
-def check_implementation(implementation, protocol) -> None:
-    """Checks the implementation of the protocol."""
-    if protocol is MerkleTreeProtocol:
-        check_implementation_of_MerkleTreeProtocol(implementation)
 
 
 def check_implementation_of_MerkleTreeProtocol(implementation):
